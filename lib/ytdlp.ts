@@ -34,7 +34,16 @@ async function getInstance(): Promise<YtDlpWrap> {
     if (!fs.existsSync(BINARY_PATH)) {
       console.log("[yt-dlp] Binary not found – downloading from GitHub…");
       fs.mkdirSync(BINARY_DIR, { recursive: true });
-      await YtDlpWrap.downloadFromGithub(BINARY_PATH);
+      const release = await YtDlpWrap.getGithubReleases(1, 1);
+      const version = release[0].tag_name;
+      const isWin32 = process.platform === "win32";
+      const isMac = process.platform === "darwin";
+      const fileName = isWin32 ? "yt-dlp.exe" : isMac ? "yt-dlp_macos" : "yt-dlp_linux";
+      const fileURL = `https://github.com/yt-dlp/yt-dlp/releases/download/${version}/${fileName}`;
+      
+      console.log(`[yt-dlp] Downloading ${fileName} (${version})…`);
+      await YtDlpWrap.downloadFile(fileURL, BINARY_PATH);
+      if (!isWin32) fs.chmodSync(BINARY_PATH, "777");
       console.log("[yt-dlp] Binary ready at", BINARY_PATH);
     }
     _instance = new YtDlpWrap(BINARY_PATH);
