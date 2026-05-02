@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-brand-bg: #000319;
+  --color-brand-accent: #cbacf9;
+  --color-brand-accent-dim: #a78bda;
+  --color-brand-surface: #0d0d2b;
+  --color-brand-border: #1e1e4a;
+  --color-brand-card: #080820;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --background: #000319;
+  --foreground: #e8e8f0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0d0d2b;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbacf9;
+  border-radius: 3px;
+}
+
+/* Glow effect utility */
+.glow-accent {
+  box-shadow: 0 0 20px rgba(203, 172, 249, 0.25);
+}
+
+.glow-accent-strong {
+  box-shadow: 0 0 40px rgba(203, 172, 249, 0.4), 0 0 80px rgba(203, 172, 249, 0.15);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #cbacf9 0%, #a78bda 40%, #7c5cbb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass card */
+.glass-card {
+  background: rgba(8, 8, 32, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(203, 172, 249, 0.15);
+}
+
+/* Spinner animation */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(203, 172, 249, 0.25); }
+  50% { box-shadow: 0 0 40px rgba(203, 172, 249, 0.5); }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease forwards;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid rgba(203, 172, 249, 0.25);
+  border-top-color: #cbacf9;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.shimmer-bg {
+  background: linear-gradient(
+    90deg,
+    rgba(203, 172, 249, 0.05) 0%,
+    rgba(203, 172, 249, 0.12) 50%,
+    rgba(203, 172, 249, 0.05) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* Orb background decorations */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+}

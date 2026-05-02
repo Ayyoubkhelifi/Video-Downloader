@@ -1,0 +1,13 @@
+# Netlify configuration for Universal Video Downloader
+# ─────────────────────────────────────────────────────────────────────────────
+
+[build]
+  command   = "npm run build"
+  publish   = ".next"
+
+# Use Netlify's Next.js adapter (handles SSR + API routes as serverless functions)
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
