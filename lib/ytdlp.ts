@@ -151,7 +151,7 @@ export async function streamYtDlpVideo(
 ): Promise<NodeJS.ReadableStream> {
   const ytdlp = await getInstance();
   const fmt = formatId === "best" ? "bestvideo+bestaudio/best" : formatId;
-  return ytdlp.execStream([
+  const args = [
     url,
     "-f", fmt,
     "--merge-output-format", "mp4",
@@ -160,5 +160,13 @@ export async function streamYtDlpVideo(
     "--no-warnings",
     "--js-runtimes", `node:${process.execPath}`,
     "--extractor-args", "youtube:player_client=android",
-  ]);
+  ];
+
+  if (process.env.YOUTUBE_COOKIES) {
+    const cookiesPath = path.join(os.tmpdir(), "youtube-cookies.txt");
+    fs.writeFileSync(cookiesPath, process.env.YOUTUBE_COOKIES);
+    args.push("--cookies", cookiesPath);
+  }
+
+  return ytdlp.execStream(args);
 }

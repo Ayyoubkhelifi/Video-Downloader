@@ -1,79 +1,73 @@
 /**
- * YouTube handler using @distube/ytdl-core (maintained fork of ytdl-core).
- * Provides metadata fetching and video streaming.
+ * YouTube handler using YouTube Data API / oEmbed for metadata fetching (bypassing bot checks)
+ * and routing download streaming entirely through yt-dlp.
  */
 
-import ytdl from "@distube/ytdl-core";
-import type { VideoInfo, VideoFormat } from "./types";
+import type { VideoInfo } from "./types";
+import { streamYtDlpVideo } from "./ytdlp";
 
-function formatBytes(bytes?: number | string | null): string | undefined {
-  if (bytes == null) return undefined;
-  const n = typeof bytes === "string" ? parseInt(bytes, 10) : bytes;
-  if (isNaN(n) || n === 0) return undefined;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(n) / Math.log(1024));
-  return `${(n / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
+function extractVideoId(url: string): string | null {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return match && match[2].length === 11 ? match[2] : null;
 }
 
 export async function getYouTubeInfo(url: string): Promise<VideoInfo> {
-  const info = await ytdl.getInfo(url);
-  const { videoDetails, formats: raw } = info;
+  const videoId = extractVideoId(url);
+  if (!videoId) throw new Error("Invalid YouTube URL");
 
-  const formats: VideoFormat[] = [];
-  const seen = new Set<string>();
+  let title = "YouTube Video";
+  let author = "YouTube";
+  let thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+  let duration = 0;
 
-  // 1. Video + Audio combined (most compatible, sorted by height desc)
-  const combined = raw
-    .filter((f) => f.hasVideo && f.hasAudio)
-    .sort((a, b) => (b.height ?? 0) - (a.height ?? 0));
+  const apiKey = process.env.YOUTUBE_API_KEY;
 
-  for (const f of combined) {
-    const key = `${f.height}-${f.container}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    formats.push({
-      formatId: String(f.itag),
-      quality: f.qualityLabel ?? `${f.height}p`,
-      format: f.container ?? "mp4",
-      hasVideo: true,
-      hasAudio: true,
-      height: f.height ?? undefined,
-      size: formatBytes(f.contentLength),
-      codec: f.codecs,
-    });
+  if (apiKey) {
+    const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoId}&key=${apiKey}`);
+    const data = await res.json();
+    if (data.items && data.items.length > 0) {
+      const item = data.items[0];
+      title = item.snippet.title;
+      author = item.snippet.channelTitle;
+      
+      // ISO 8601 duration parsing (PT5M30S)
+      const match = item.contentDetails?.duration?.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+      if (match) {
+        const hours = (parseInt(match[1]) || 0);
+        const minutes = (parseInt(match[2]) || 0);
+        const seconds = (parseInt(match[3]) || 0);
+        duration = hours * 3600 + minutes * 60 + seconds;
+      }
+    }
+  } else {
+    // Fallback to oEmbed which is never blocked and doesn't require an API key
+    try {
+      const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+      if (res.ok) {
+        const data = await res.json();
+        title = data.title;
+        author = data.author_name;
+        if (data.thumbnail_url) thumbnail = data.thumbnail_url;
+      }
+    } catch (err) {
+      console.warn("oEmbed fetch failed", err);
+    }
   }
-
-  // 2. Audio-only (top 3 by bitrate)
-  const audioOnly = raw
-    .filter((f) => !f.hasVideo && f.hasAudio)
-    .sort((a, b) => (b.audioBitrate ?? 0) - (a.audioBitrate ?? 0));
-
-  for (const f of audioOnly.slice(0, 3)) {
-    const key = `audio-${f.audioBitrate}-${f.container}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    formats.push({
-      formatId: String(f.itag),
-      quality: `Audio ${f.audioBitrate ?? ""}kbps`,
-      format: f.container ?? "m4a",
-      hasVideo: false,
-      hasAudio: true,
-      audioBitrate: f.audioBitrate ?? undefined,
-      size: formatBytes(f.contentLength),
-    });
-  }
-
-  const thumbnail = videoDetails.thumbnails
-    ?.sort((a, b) => (b.width ?? 0) - (a.width ?? 0))[0]?.url;
 
   return {
     url,
-    platform: "YouTube",
-    title: videoDetails.title,
+    platform: "youtube",
+    title,
     thumbnail,
-    duration: parseInt(videoDetails.lengthSeconds, 10),
-    author: videoDetails.author?.name ?? videoDetails.ownerChannelName,
-    formats,
+    duration,
+    author,
+    formats: [
+      { formatId: "best", quality: "Best Quality (Auto)", format: "mp4", hasVideo: true, hasAudio: true },
+      { formatId: "22", quality: "720p (Pre-merged)", format: "mp4", hasVideo: true, hasAudio: true },
+      { formatId: "18", quality: "360p (Pre-merged)", format: "mp4", hasVideo: true, hasAudio: true },
+      { formatId: "140", quality: "Audio Only", format: "m4a", hasVideo: false, hasAudio: true },
+    ],
   };
 }
 
@@ -81,8 +75,6 @@ export async function streamYouTubeVideo(
   url: string,
   formatId: string
 ): Promise<NodeJS.ReadableStream> {
-  const info = await ytdl.getInfo(url);
-  const quality = isNaN(Number(formatId)) ? formatId : Number(formatId);
-  const format = ytdl.chooseFormat(info.formats, { quality });
-  return ytdl.downloadFromInfo(info, { format });
+  // Delegate YouTube streaming entirely to yt-dlp which supports --cookies
+  return streamYtDlpVideo(url, formatId);
 }
