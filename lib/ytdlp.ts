@@ -111,8 +111,16 @@ function parseFormats(rawFormats: any[]): VideoFormat[] {
 
 export async function getYtDlpInfo(url: string): Promise<VideoInfo> {
   const ytdlp = await getInstance();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const raw: any = await ytdlp.getVideoInfo(url);
+  const args = [
+    url,
+    "-f", "b",
+    "--no-warnings",
+    "--js-runtimes",
+    `node:${process.execPath}`,
+    "--extractor-args",
+    "youtube:player_client=android",
+  ];
+  const raw: any = await ytdlp.getVideoInfo(args);
 
   const formats = raw.formats ? parseFormats(raw.formats) : [];
 
@@ -149,5 +157,8 @@ export async function streamYtDlpVideo(
     "--merge-output-format", "mp4",
     "-o", "-",
     "--no-playlist",
+    "--no-warnings",
+    "--js-runtimes", `node:${process.execPath}`,
+    "--extractor-args", "youtube:player_client=android",
   ]);
 }
