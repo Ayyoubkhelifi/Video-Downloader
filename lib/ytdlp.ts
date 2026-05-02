@@ -10,7 +10,14 @@ import path from "path";
 import fs from "fs";
 import type { VideoInfo, VideoFormat } from "./types";
 
-const BINARY_DIR = path.join(process.cwd(), "bin");
+import os from "os";
+
+// In serverless environments like Netlify/Vercel, the file system is read-only except for /tmp
+const isServerless = process.env.NODE_ENV === "production" || process.env.NETLIFY;
+const BINARY_DIR = isServerless 
+  ? path.join(os.tmpdir(), "ytdlp-bin") 
+  : path.join(process.cwd(), "bin");
+
 const BINARY_PATH = path.join(
   BINARY_DIR,
   process.platform === "win32" ? "yt-dlp.exe" : "yt-dlp"

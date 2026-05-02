@@ -9,9 +9,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Universal Video Downloader – Download from YouTube, Instagram & TikTok",
+  title: "Universal Video Downloader",
   description:
-    "Download videos from YouTube, Instagram, TikTok and more in MP4, MP3, and other formats. Fast, free, and no registration required.",
+    "Developped By Ayoub",
   keywords: ["video downloader", "youtube downloader", "instagram downloader", "tiktok downloader", "mp4", "mp3"],
   openGraph: {
     title: "Universal Video Downloader",
